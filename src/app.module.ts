@@ -2,16 +2,20 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
-import { UsersService } from './users/users.service';
-import { UsersController } from './users/users.controller';
+import { UsersService } from './modules/users/users.service';
+import { UsersController } from './modules/users/users.controller';
 import { PrismaModule } from './modules/prisma/prisma.module';
-import { UsersModule } from './users/users.module';
+import { UsersModule } from './modules/users/users.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { envValidationSchema } from './config/env.validation';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validationSchema: envValidationSchema,
+    }),
     PrismaModule,
     UsersModule,
     ThrottlerModule.forRoot({
