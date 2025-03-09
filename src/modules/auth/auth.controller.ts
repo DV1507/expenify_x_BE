@@ -13,6 +13,7 @@ import RequestWithUser from './requestWithUser.interface';
 import { CreateUserDto } from '../users/dtos/create-user.dto';
 import { Response } from 'express';
 import JwtAuthenticationGuard from './guards/jwt-authentication.guard';
+import LoginDto from './dtos/login.dto';
 
 @Controller('authentication')
 export class AuthController {
@@ -26,7 +27,11 @@ export class AuthController {
   @HttpCode(200)
   @UseGuards(LocalAuthenticationGuard)
   @Post('log-in')
-  logIn(@Req() request: RequestWithUser, @Res() response: Response) {
+  logIn(
+    @Body() LoginDto: LoginDto,
+    @Req() request: RequestWithUser,
+    @Res() response: Response,
+  ) {
     const { user } = request;
     const cookie = this.authenticationService.getCookieWithJwtToken(user.id);
     response.setHeader('Set-Cookie', cookie);
