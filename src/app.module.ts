@@ -9,6 +9,7 @@ import { UsersModule } from './modules/users/users.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { envValidationSchema } from './config/env.validation';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { envValidationSchema } from './config/env.validation';
         },
       ],
     }),
+    AuthModule,
   ],
   controllers: [AppController, UsersController],
   providers: [
