@@ -28,6 +28,12 @@ export class UsersService {
 
   async getById(id: string) {
     const user = await this.prisma.users.findFirstOrThrow({ where: { id } }); // await this.prisma.user.findOne({ id });
+    if (!user.verified) {
+      throw new HttpException(
+        'Please verify your email address',
+        HttpStatus.NOT_FOUND,
+      );
+    }
     if (user) {
       return user;
     }

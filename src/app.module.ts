@@ -10,6 +10,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { envValidationSchema } from './config/env.validation';
 import { AuthModule } from './modules/auth/auth.module';
+import { MailService } from './modules/mail/mail.service';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { AuthModule } from './modules/auth/auth.module';
     AppService,
     UsersService,
     { provide: APP_GUARD, useClass: ThrottlerGuard }, // Apply Throttling Globally
+    MailService,
   ],
 })
 export class AppModule {}
