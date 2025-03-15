@@ -13,15 +13,19 @@ async function bootstrap() {
   );
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Expensify API Documentation')
-    .setDescription('API developed throughout the API with NestJS course')
+    .setTitle('NestJS Auth API')
+    .setDescription('API documentation for authentication with cookies')
     .setVersion('1.0')
-    .addCookieAuth('Authentication')
+    .addCookieAuth('jwt') // 👈 Add support for cookie-based JWT authentication
     .build();
 
   app.setGlobalPrefix('api/v1');
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api', app, document, {
+    swaggerOptions: {
+      withCredentials: true,
+    },
+  });
 
   app.useGlobalPipes(new ValidationPipe());
   app.use(cookieParser());

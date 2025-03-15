@@ -11,6 +11,8 @@ import { APP_GUARD } from '@nestjs/core';
 import { envValidationSchema } from './config/env.validation';
 import { AuthModule } from './modules/auth/auth.module';
 import { MailService } from './modules/mail/mail.service';
+import { JwtAuthGuard } from './common/enums/guards/jwt-auth.guard';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -28,6 +30,10 @@ import { MailService } from './modules/mail/mail.service';
         },
       ],
     }),
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'mySecretKey',
+      signOptions: { expiresIn: '1h' },
+    }),
     AuthModule,
   ],
   controllers: [AppController, UsersController],
@@ -36,6 +42,10 @@ import { MailService } from './modules/mail/mail.service';
     UsersService,
     { provide: APP_GUARD, useClass: ThrottlerGuard }, // Apply Throttling Globally
     MailService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard, // 👈 This makes JwtAuthGuard a global guard
+    },
   ],
 })
 export class AppModule {}

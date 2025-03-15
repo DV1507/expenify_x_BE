@@ -1,11 +1,21 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '../users/dtos/create-user.dto';
 import { PostgresErrorCode } from 'src/common/enums';
+import { JwtService } from '@nestjs/jwt';
 @Injectable()
 export class AuthService {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private jwtService: JwtService,
+  ) {}
   public async register(registrationData: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(registrationData.password, 10);
     try {
@@ -33,6 +43,32 @@ export class AuthService {
         'Something went wrong',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+  async validateUser(email: string, password: string): Promise<any> {
+    const user = await this.usersService.getUserByEmail(email);
+    if (user && (await bcrypt.compare(password, user.password))) {
+      const { password, ...userWithoutPassword } = user;
+      return userWithoutPassword;
+    }
+    throw new UnauthorizedException('Invalid credentials');
+  }
+
+  async login(email: string, password: string) {
+    const user = await this.validateUser(email, password);
+    if (user) {
+      return {
+        access_token: this.jwtService.sign(user),
+      };
+    }
+  }
+
+  verifyToken(token: string): Promise<any> {
+    try {
+      return this.jwtService.verify(token);
+    } catch (error) {
+      Logger.error(error);
+      throw new UnauthorizedException('Invalid token');
     }
   }
 }
