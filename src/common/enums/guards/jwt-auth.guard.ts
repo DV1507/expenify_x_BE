@@ -5,9 +5,15 @@ import {
   UnauthorizedException,
   Logger,
 } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import { users } from '@prisma/client';
 import { Request } from 'express';
+import { Reflector } from '@nestjs/core';
+
+// Extend Request interface to include "user"
+export interface AuthenticatedRequest extends Request {
+  user?: users;
+}
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -17,6 +23,8 @@ export class JwtAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const token = request.cookies?.jwt;
     // Check if route is marked as public
     const isPublic = this.reflector.get<boolean>(
       'isPublic',
@@ -25,21 +33,29 @@ export class JwtAuthGuard implements CanActivate {
     if (isPublic) {
       return true;
     }
-    const request = context.switchToHttp().getRequest<Request>();
-
-    const token = request.cookies?.jwt; // Extract token from cookies
-
     if (!token) {
       throw new UnauthorizedException('Missing authentication token');
     }
 
     try {
-      const decoded = await this.jwtService.verify(token);
-      request.user = decoded; // Attach user info to request
+      const jwtUserData: users = await this.jwtService.verify(token);
+      request.user = jwtUserData; // Attach user info to request
+
+      // Allow OTP verification route only for unverified users
+      const isOtpVerificationRoute = request.url.includes('verify-otp');
+      if (isOtpVerificationRoute && !jwtUserData.verified) {
+        return true;
+      }
+
+      // Otherwise, allow access only if user is verified
+      if (!jwtUserData.verified) {
+        throw new UnauthorizedException('Email not verified');
+      }
+
       return true;
     } catch (error) {
       Logger.error(error);
-      throw new UnauthorizedException('Invalid or expired token');
+      throw new UnauthorizedException(error.message);
     }
   }
 }

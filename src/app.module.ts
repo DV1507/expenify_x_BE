@@ -13,6 +13,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { MailService } from './modules/mail/mail.service';
 import { JwtAuthGuard } from './common/enums/guards/jwt-auth.guard';
 import { JwtModule } from '@nestjs/jwt';
+import { RedisModule } from './modules/redis/redis.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { JwtModule } from '@nestjs/jwt';
       signOptions: { expiresIn: '1h' },
     }),
     AuthModule,
+    RedisModule,
   ],
   controllers: [AppController, UsersController],
   providers: [
