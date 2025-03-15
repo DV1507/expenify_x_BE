@@ -19,7 +19,7 @@ export class UsersService {
   }
 
   async getUsers() {
-    return this.prisma.users.findMany();
+    return this.prisma.users.findMany({ omit: { password: true } });
   }
 
   async getUserByEmail(email: string) {
