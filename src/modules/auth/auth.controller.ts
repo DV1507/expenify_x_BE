@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   HttpException,
+  Logger,
   Post,
   Request,
   Response,
@@ -20,8 +21,20 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
   @Public()
   @Post('register')
-  async register(@Body() registrationData: CreateUserDto) {
-    return this.authService.register(registrationData);
+  async register(
+    @Body() registrationData: CreateUserDto,
+    @Response() res: ExpressResponse,
+  ) {
+    try {
+      const newUser = await this.authService.register(registrationData);
+      console.log('✅ User Created:', newUser); // ✅ Debug log
+      return res
+        .status(201)
+        .json({ message: 'User registered successfully', user: newUser }); // ✅ Ensure response is sent
+    } catch (error) {
+      Logger.error(error);
+      return res.status(400).json({ message: 'Something went wrong' }); // ✅ Properly return error response
+    }
   }
 
   @Public()
