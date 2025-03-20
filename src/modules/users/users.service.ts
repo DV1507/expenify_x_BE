@@ -10,7 +10,7 @@ export class UsersService {
   }
 
   async getUserByEmail(email: string) {
-    return this.prisma.users.findFirstOrThrow({ where: { email } });
+    return this.prisma.users.findFirst({ where: { email } });
   }
 
   async getById(id: string) {
@@ -37,6 +37,13 @@ export class UsersService {
       omit: {
         password: true,
       },
+    });
+  }
+
+  async updatePassword(email: string, hashedPassword: string) {
+    return this.prisma.users.update({
+      where: { email },
+      data: { password: hashedPassword },
     });
   }
 }

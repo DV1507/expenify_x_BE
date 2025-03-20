@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   HttpException,
+  HttpStatus,
   Logger,
   Post,
   Request,
@@ -15,6 +16,9 @@ import LoginDto from './dtos/login.dto';
 import { VerifyOtpDto } from './dtos/verify-otp.dto';
 import { AuthenticatedRequest } from 'src/common/enums/guards/jwt-auth.guard';
 import { RequestOtpDto } from './dtos/request-otp.dto';
+import { ForgotPasswordDto } from './dtos/forgot-password.dto';
+import { ResetPasswordDto } from './dtos/reset-password.dto';
+import { ChangePasswordDto } from './dtos/change-password.dto';
 
 @Controller('authentication')
 export class AuthController {
@@ -107,5 +111,31 @@ export class AuthController {
     );
 
     return { message: 'OTP sent successfully' };
+  }
+  @Public()
+  @Post('forgot-password')
+  async forgotPassword(@Body() { email }: ForgotPasswordDto) {
+    await this.authService.forgotPassword(email);
+    return { message: 'Password rest link sent to your email' };
+  }
+
+  @Public()
+  @Post('reset-password')
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    await this.authService.resetPassword(resetPasswordDto);
+    return { message: 'Password reset successful' };
+  }
+
+  @Post('change-password')
+  async changePassword(
+    @Request() req: AuthenticatedRequest,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    const userEmail = req?.user?.email;
+    if (!userEmail) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+    await this.authService.changePassword(userEmail, changePasswordDto);
+    return { message: 'Password changed successfully' };
   }
 }
