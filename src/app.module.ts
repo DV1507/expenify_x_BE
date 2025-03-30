@@ -27,7 +27,7 @@ import { RedisModule } from './modules/redis/redis.module';
       throttlers: [
         {
           ttl: 600000,
-          limit: 10,
+          limit: 20,
         },
       ],
     }),

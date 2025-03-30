@@ -17,8 +17,9 @@ model users {
   email       String   @unique
   first_name  String
   last_name   String
-  password    String
+  password    String?
   verified     Boolean  @default(false)
+  is_social_login Boolean  @default(false)
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
   deleted_at  DateTime? 

@@ -17,6 +17,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { ConfigService } from '@nestjs/config';
 import { ChangePasswordDto } from './dtos/change-password.dto';
+import axios from 'axios';
 @Injectable()
 export class AuthService {
   private redis = new Redis(); // Connect to Redis
@@ -66,7 +67,11 @@ export class AuthService {
   }
   async validateUser(email: string, password: string): Promise<any> {
     const user = await this.usersService.getUserByEmail(email);
-    if (user && (await bcrypt.compare(password, user.password))) {
+    if (
+      user &&
+      user?.password &&
+      (await bcrypt.compare(password, user?.password))
+    ) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...userWithoutPassword } = user;
       return userWithoutPassword;
@@ -226,7 +231,7 @@ export class AuthService {
     // Check if the current password matches the one in the database
     const isPasswordValid = await bcrypt.compare(
       currentPassword,
-      user.password,
+      user.password || '',
     );
     if (!isPasswordValid) {
       throw new HttpException(
@@ -240,5 +245,72 @@ export class AuthService {
 
     // Update the password in the database
     await this.usersService.updatePassword(email, hashedNewPassword);
+  }
+
+  async handleGoogleLogin(idToken: string): Promise<string> {
+    // 1. Verify token with Google
+    const googleUser = await this.verifyGoogleToken(idToken);
+    if (!googleUser?.email) {
+      throw new UnauthorizedException('Invalid Google Token');
+    }
+
+    // 2. Check if user exists
+    let user = await this.prisma.users.findUnique({
+      where: { email: googleUser.email },
+      select: {
+        id: true,
+        email: true,
+        first_name: true,
+        last_name: true,
+        verified: true,
+      },
+    });
+
+    // 3. Create user if not found
+    if (!user) {
+      user = await this.prisma.users.create({
+        data: {
+          email: googleUser.email,
+          first_name: googleUser.first_name,
+          last_name: googleUser.last_name,
+          verified: true,
+          is_social_login: true,
+        },
+      });
+    }
+
+    // 4. Issue JWT
+    const payload = user;
+    return this.jwtService.sign(payload);
+  }
+
+  async verifyGoogleToken(accessToken: string) {
+    const res = await axios.get(
+      'https://www.googleapis.com/oauth2/v3/userinfo',
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    );
+    Logger.log(res.data, 'res');
+    const data = res.data;
+    return {
+      email: data.email,
+      name: data.name,
+      first_name: data.given_name,
+      last_name: data.family_name,
+      picture: data.picture,
+    };
+  }
+
+  loggedInUser(token: string) {
+    try {
+      const payload = this.jwtService.verify(token);
+      return { email: payload.email };
+    } catch (e) {
+      Logger.error(e);
+      throw new UnauthorizedException();
+    }
   }
 }

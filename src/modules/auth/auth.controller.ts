@@ -6,6 +6,7 @@ import {
   Logger,
   Post,
   Request,
+  Res,
   Response,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -19,6 +20,7 @@ import { RequestOtpDto } from './dtos/request-otp.dto';
 import { ForgotPasswordDto } from './dtos/forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { ChangePasswordDto } from './dtos/change-password.dto';
+import { sendResponse } from 'src/common/utils/response.utils';
 
 @Controller('authentication')
 export class AuthController {
@@ -32,9 +34,13 @@ export class AuthController {
     try {
       const newUser = await this.authService.register(registrationData);
       console.log('✅ User Created:', newUser); // ✅ Debug log
-      return res
-        .status(201)
-        .json({ message: 'User registered successfully', user: newUser }); // ✅ Ensure response is sent
+      sendResponse(
+        res,
+        { user: newUser },
+        'User registered successfully',
+        true,
+        201,
+      );
     } catch (error) {
       Logger.error(error);
       return res.status(400).json({ message: 'Something went wrong' }); // ✅ Properly return error response
@@ -58,9 +64,8 @@ export class AuthController {
         maxAge: 60 * 60 * 1000, // 1 hour expiration
       });
       if (result?.requiresOtp) {
-        return res.json({ requiresOtp: true, message: 'OTP required' });
+        sendResponse(res, { requiresOtp: true }, 'OTP required', true, 200);
       }
-      return res.json({ message: 'Login successful' });
     }
     throw new HttpException('something went wrong', 400);
   }
@@ -68,7 +73,7 @@ export class AuthController {
   @Post('logout')
   logout(@Response() res: ExpressResponse) {
     res.clearCookie('jwt');
-    return res.json({ message: 'Logout successful' });
+    sendResponse(res, {}, 'Logged out', true, 200);
   }
 
   @Post('verify-otp')
@@ -91,7 +96,7 @@ export class AuthController {
       maxAge: 60 * 60 * 1000,
     });
 
-    return res.json({ message: 'OTP verified successfully' });
+    sendResponse(res, {}, 'OTP verified successfully', true, 200);
   }
 
   @Post('request-otp')
@@ -103,20 +108,23 @@ export class AuthController {
     const { email } = requestOtpDto;
     const { user } = req;
     if (!user) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      sendResponse(res, {}, 'Unauthorized', true, 400);
+      return;
     }
     await this.authService.sendOTP(
       `${user.first_name} ${user.last_name}`,
       email,
     );
-
-    return { message: 'OTP sent successfully' };
+    sendResponse(res, {}, 'OTP sent successfully', true, 200);
   }
   @Public()
   @Post('forgot-password')
-  async forgotPassword(@Body() { email }: ForgotPasswordDto) {
+  async forgotPassword(
+    @Body() { email }: ForgotPasswordDto,
+    @Response() res: ExpressResponse,
+  ) {
     await this.authService.forgotPassword(email);
-    return { message: 'Password rest link sent to your email' };
+    sendResponse(res, {}, 'Password rest link sent to your email', true, 200);
   }
 
   @Public()
@@ -130,12 +138,29 @@ export class AuthController {
   async changePassword(
     @Request() req: AuthenticatedRequest,
     @Body() changePasswordDto: ChangePasswordDto,
+    @Response() res: ExpressResponse,
   ) {
     const userEmail = req?.user?.email;
     if (!userEmail) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
     await this.authService.changePassword(userEmail, changePasswordDto);
-    return { message: 'Password changed successfully' };
+    sendResponse(res, {}, 'Password changed successfully', true, 200);
+  }
+
+  @Public()
+  @Post('google')
+  async loginWithGoogle(
+    @Body('credential') idToken: string,
+    @Res({ passthrough: true }) res: ExpressResponse,
+  ) {
+    const token = await this.authService.handleGoogleLogin(idToken);
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 60 * 60 * 1000,
+    });
+    sendResponse(res, {}, 'Login successful', true, 200);
   }
 }

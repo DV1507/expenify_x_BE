@@ -46,7 +46,6 @@ export class JwtAuthGuard implements CanActivate {
       if (isOtpVerificationRoute && !jwtUserData.verified) {
         return true;
       }
-
       // Otherwise, allow access only if user is verified
       if (!jwtUserData.verified) {
         throw new UnauthorizedException('Email not verified');
