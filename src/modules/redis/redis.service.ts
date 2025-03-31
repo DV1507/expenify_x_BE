@@ -11,6 +11,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       host: this.configService.get<string>('REDIS_HOST', 'localhost'),
       port: this.configService.get<number>('REDIS_PORT', 6379),
       password: this.configService.get<string>('REDIS_PASSWORD', ''),
+      maxRetriesPerRequest: null,
+      enableOfflineQueue: true, // keeps commands in queue while reconnecting
     });
 
     this.redisClient.on('connect', () => {
