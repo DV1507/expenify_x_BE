@@ -13,6 +13,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       password: this.configService.get<string>('REDIS_PASSWORD', ''),
       maxRetriesPerRequest: null,
       enableOfflineQueue: true, // keeps commands in queue while reconnecting
+      tls: {},
     });
 
     this.redisClient.on('connect', () => {
