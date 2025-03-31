@@ -14,6 +14,7 @@ import { MailService } from './modules/mail/mail.service';
 import { JwtAuthGuard } from './common/enums/guards/jwt-auth.guard';
 import { JwtModule } from '@nestjs/jwt';
 import { RedisModule } from './modules/redis/redis.module';
+import { RedisService } from './modules/redis/redis.service';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { RedisModule } from './modules/redis/redis.module';
       provide: APP_GUARD,
       useClass: JwtAuthGuard, // 👈 This makes JwtAuthGuard a global guard
     },
+    RedisService,
   ],
 })
 export class AppModule {}

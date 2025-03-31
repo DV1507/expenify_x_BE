@@ -11,22 +11,22 @@ import { CreateUserDto } from '../users/dtos/create-user.dto';
 import { PostgresErrorCode } from 'src/common/enums';
 import { JwtService } from '@nestjs/jwt';
 import { users } from '@prisma/client';
-import Redis from 'ioredis';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { ConfigService } from '@nestjs/config';
 import { ChangePasswordDto } from './dtos/change-password.dto';
 import axios from 'axios';
+import { RedisService } from '../redis/redis.service';
 @Injectable()
 export class AuthService {
-  private redis = new Redis(); // Connect to Redis
   constructor(
     private jwtService: JwtService,
     private readonly mailService: MailService,
     private prisma: PrismaService,
     private readonly usersService: UsersService,
     private configService: ConfigService,
+    private readonly redisService: RedisService,
   ) {}
   public async register(registrationData: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(registrationData.password, 10);
@@ -102,7 +102,7 @@ export class AuthService {
     // Pad the number with leading zeros if necessary
     const otp = randomNumber.toString().padStart(6, '0');
 
-    await this.redis.set(`${email}-otp`, otp); // Store OTP in Redis(otp);
+    await this.redisService.set(`${email}-otp`, otp); // Store OTP in Redis(otp);
 
     await this.mailService.sendMail({
       email,
@@ -120,12 +120,12 @@ export class AuthService {
   async verifyOtp(email: string, otp: string): Promise<string> {
     const redisOtpKey = `${email}-otp`;
 
-    const storedOtp = await this.redis.get(redisOtpKey); // Get OTP from Redis
+    const storedOtp = await this.redisService.get(redisOtpKey); // Get OTP from Redis
 
     if (!(storedOtp === otp)) {
       throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST);
     }
-    await this.redis.del(redisOtpKey); // Remove OTP after successful verification
+    await this.redisService.delete(redisOtpKey); // Remove OTP after successful verification
 
     // Mark user as verified
     const verifiedUser = await this.usersService.verifyEmail(email);
@@ -155,7 +155,7 @@ export class AuthService {
     );
 
     //stores the reset token in redis (expires after 15 min)
-    await this.redis.set(`${email}-reset-token`, resetToken);
+    await this.redisService.set(`${email}-reset-token`, resetToken);
 
     //create a reset link that the user will receive in their email
     const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
@@ -183,7 +183,7 @@ export class AuthService {
       const email = payload.email;
 
       //check redis to see if the token was actually issued.
-      const storedToken = await this.redis.get(`${email}-reset-token`);
+      const storedToken = await this.redisService.get(`${email}-reset-token`);
       console.log(`Token from Redis: ${storedToken}`);
 
       // Compare received token with Redis stored token
@@ -209,7 +209,7 @@ export class AuthService {
       console.log(`Password updated successfully for ${user.email}`);
 
       // Delete the token from Redis (so it can’t be reused)
-      await this.redis.del(`${email}-reset-token`);
+      await this.redisService.delete(`${email}-reset-token`);
       console.log(`Token removed from Redis after successful reset`);
 
       return { message: 'Password reset successful' };
