@@ -20,8 +20,78 @@ model users {
   password    String?
   verified     Boolean  @default(false)
   is_social_login Boolean  @default(false)
+  is_admin Boolean  @default(false)
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
   deleted_at  DateTime? 
+  expenses    expenses[]
+  categories  categories[]
+  recurring   recurring_expenses[]
 }
 
+model expenses {
+  id                String                 @id @default(uuid())
+  amount            Decimal                @db.Decimal(10, 2)
+  receipt           String?
+  created_by_id     String
+  created_by        users                  @relation(fields: [created_by_id], references: [id])
+  created_at        DateTime               @default(now())
+  updated_at        DateTime               @updatedAt
+  deleted_at        DateTime?
+  expense_categories expense_categories[]
+}
+
+model recurring_expenses {
+  id                 String               @id @default(uuid())
+  amount             Decimal              @db.Decimal(10, 2)
+  receipt            String?
+  created_by_id      String
+  created_by         users                @relation(fields: [created_by_id], references: [id])
+  frequency          frequency
+  started_at         DateTime
+  next_renewal_date  DateTime
+  status             recurring_status
+  created_at         DateTime             @default(now())
+  updated_at         DateTime             @updatedAt
+  deleted_at         DateTime?
+}
+
+
+model categories {
+  id                 String               @id @default(uuid())
+  name               String
+  description        String?
+  created_by_id      String
+  created_by         users                @relation(fields: [created_by_id], references: [id])
+  is_system_default  Boolean              @default(false)
+  created_at         DateTime             @default(now())
+  updated_at         DateTime             @updatedAt
+  deleted_at         DateTime?
+
+  expense_categories expense_categories[]
+}
+
+model expense_categories {
+  id           String      @id @default(uuid())
+  expense_id   String
+  category_id  String
+  expense      expenses    @relation(fields: [expense_id], references: [id])
+  category     categories  @relation(fields: [category_id], references: [id])
+  created_at   DateTime    @default(now())
+  updated_at   DateTime    @updatedAt
+  deleted_at   DateTime?
+}
+
+
+enum frequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum recurring_status {
+  ACTIVE
+  PAUSED
+  CANCELLED
+}

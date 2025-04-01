@@ -63,6 +63,7 @@ export class AuthController {
         sameSite: 'strict', // CSRF protection
         maxAge: 60 * 60 * 1000, // 1 hour expiration
       });
+      sendResponse(res, {}, 'Login successful', true, 200);
       if (result?.requiresOtp) {
         sendResponse(res, { requiresOtp: true }, 'OTP required', true, 200);
       }

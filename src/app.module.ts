@@ -15,7 +15,8 @@ import { JwtAuthGuard } from './common/enums/guards/jwt-auth.guard';
 import { JwtModule } from '@nestjs/jwt';
 import { RedisModule } from './modules/redis/redis.module';
 import { RedisService } from './modules/redis/redis.service';
-
+import { ScriptsModule } from './modules/scripts/scripts.module';
+import { CategoryModule } from './modules/category/category.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -38,6 +39,8 @@ import { RedisService } from './modules/redis/redis.service';
     }),
     AuthModule,
     RedisModule,
+    ScriptsModule,
+    CategoryModule,
   ],
   controllers: [AppController, UsersController],
   providers: [

@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
@@ -16,14 +11,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       host: this.configService.get<string>('REDIS_HOST'),
       port: this.configService.get<number>('REDIS_PORT', 6379),
       password: this.configService.get<string>('REDIS_PASSWORD', ''),
-      maxRetriesPerRequest: null,
-      enableOfflineQueue: true, // keeps commands in queue while reconnecting
-      tls: {},
     });
-    Logger.log(
-      this.configService.get<string>('REDIS_HOST', 'localhost'),
-      'xzcxzc',
-    );
+
     this.redisClient.on('connect', () => {
       console.log('✅ Connected to Redis');
     });

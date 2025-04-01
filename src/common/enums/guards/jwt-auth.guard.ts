@@ -12,7 +12,7 @@ import { Reflector } from '@nestjs/core';
 
 // Extend Request interface to include "user"
 export interface AuthenticatedRequest extends Request {
-  user?: users;
+  user: users;
 }
 
 @Injectable()
